@@ -5,8 +5,12 @@ const mdlwr = require("../middleware/user.middleware");
 
 router.get('/', controller.getAllUsers);
 
-router.get('/:userId', mdlwr.checkDoesUserExist, controller.getSingleUser);
+router.post('/', mdlwr.isBodyValidCreate, controller.create);
 
-router.put('/:userId', mdlwr.checkDoesUserExist, controller.updateUser);
+router.get('/:userId', mdlwr.isIdValid, mdlwr.checkDoesUserExist, controller.getSingleUser);
+
+router.put('/:userId', mdlwr.isIdValid, mdlwr.isBodyValidUpdate, mdlwr.checkDoesUserExist, controller.updateUser);
+
+router.delete('/:userId', mdlwr.isIdValid, mdlwr.checkDoesUserExist, controller.deleteUser);
 
 module.exports = router;

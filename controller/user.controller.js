@@ -1,38 +1,68 @@
-const userDb = require("../dataBase/users");
+const {fileServices} = require("../service");
 
 module.exports = {
-    getAllUsers: (req, res, next) => {
+    getAllUsers: async (req, res, next) => {
         try {
-            console.log('USERS ENDPOINT!');
+            const users = await fileServices.reader();
 
-            res.json(userDb);
-        }catch (e){
+            res.json(users);
+        } catch (e) {
             next(e)
         }
 
     },
 
-    getSingleUser: (req, res, next) => {
-        try{
-            throw new Error("sadadsadad");
+    getSingleUser: async (req, res, next) => {
+        try {
+            res.json(req.user)
 
-            res.json(req.user);
-        }catch (e){
+        } catch (e) {
             next(e)
         }
     },
 
-    updateUser: (req, res, next) => {
-        try{
-            const newUserInfo = req.body;
-            const userId = req.params.userId;
+    updateUser: async (req, res, next) => {
+        try {
+            const {user, users, body} = req;
 
-            userDb[userId] = newUserInfo;
+            const index = users.findIndex(el => el.id === user.id);
 
-            res.json('Updated')
-        }catch (e){
+            users[index] = {...users[index], ...body}
+
+            await fileServices.writer(users)
+
+            res.status(201).json(users[index])
+        } catch (e) {
             next(e)
         }
 
     },
+
+    create: async (req, res, next) => {
+        try {
+            const {name, age} = req.body;
+
+            const users = await fileServices.reader();
+            const newUser = {id: users[users.length - 1].id + 1, name, age};
+
+            users.push(newUser);
+            await fileServices.writer(users);
+            res.status(201).json(newUser);
+        } catch (e) {
+            next(e)
+        }
+    },
+    deleteUser: async (req, res, next) => {
+        try {
+            const {user, users} = req;
+            const index = users.findIndex(el => el.id === user.id);
+            users.splice(index, 1);
+            await fileServices.writer(users);
+
+            res.sendStatus(204)
+
+        } catch (e) {
+            next(e)
+        }
+    }
 }
