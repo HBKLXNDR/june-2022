@@ -1,106 +1,84 @@
 const express = require('express');
-const { fileServices } = require('./services');
 const mongoose = require("mongoose")
 
 const {fileService} = require('./services');
 
-
 const app = express();
 
 app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.urlencoded({extended: true}));
 
 app.get('/users', async (req, res) => {
-  const users = await fileServices.reader();
-  res.json(users);
+    const users = await fileService.reader();
+
+    res.json(users);
 });
 
-app.post('/users', async (req, res) => {
-  const userInfo = req.body;
+app.post("/users", async (req, res) => {
+    const {name, age} = req.body;
 
-  if (userInfo.name.length < 3 || typeof userInfo.name !== 'string') {
-    return res.status(400).json('Wrong name');
-  }
+    if (!name||name.length < 2) {
+        res.status(400).json("Wrong name or it does not exist")
+    }
+    if (!age || age < 2 || isNaN(age)) {
+        res.status(400).json("Wrong age or it does not exist")
+    }
+    const users = await fileService.reader();
+    const newUser = {id: users[users.length - 1].id + 1, name, age};
 
-  if (userInfo.age < 0 || Number.isNaN(+userInfo.age)) {
-    return res.status(400).json('Wrong age');
-  }
+    users.push(newUser);
+    await fileService.writer(users);
+    res.status(201).json(newUser);
+})
 
-  const users = await fileServices.reader();
-
-  const newUser = {
-    name: userInfo.name,
-    age: userInfo.age,
-    id: users[users.length -1].id + 1
-  };
-  users.push(newUser);
-
-  await fileServices.writer(users);
-
-  res.status(201).json(newUser);
-});
+//user with id 77 is not found
 
 app.get('/users/:userId', async (req, res) => {
-  const { userId } = req.params;
+    const {userId} = req.params;
+    const users = await fileService.reader();
+    const user = users.find((el) => el.id === +userId);
 
-  const users = await fileServices.reader();
+    if (!user) {
+        return res.status(404).json(`user with id ${userId} is not found`)
+    }
+    res.status(201).json(user)
 
-  const user = users.find((u) => u.id === +userId);
-
-  if (!user) {
-    return res.status(404).json(`User with id ${userId} not found`);
-  }
-
-  res.json(user);
 });
 
+
 app.put('/users/:userId', async (req, res) => {
-  const newUserInfo = req.body;
-  const { userId } = req.params;
+    const newUserInfo = req.body;
+    const {userId} = req.params;
+    const users = await fileService.reader();
+    const index = users.findIndex((el) => el.id === +userId);
 
-  const users = await fileServices.reader();
+    if (index === -1) {
+        return res.status(404).json(`user with id ${userId} is not found`)
+    }
 
-  const index = users.findIndex((u) => u.id === +userId);
-
-  if (index === -1) {
-    return res.status(404).json(`User with id ${userId} not found`);
-  }
-
-  users[index] = { ...users[index], ...newUserInfo };
-
-  await fileServices.writer(users);
-
-  res.status(201).json(users[index]);
+    users[index] = {...users[index], ...newUserInfo}
+    await fileService.writer(users)
+    res.status(201).json(users[index])
 });
 
 app.delete('/users/:userId', async (req, res) => {
-  const { userId } = req.params;
+    const {userId} = req.params;
+    const users = await fileService.reader();
+    const index = users.findIndex((el) => el.id === +userId);
 
-  const users = await fileServices.reader();
+    if (index === -1) {
+        return res.status(404).json(`user with id ${userId} is not found`)
+    }
 
-  const index = users.findIndex((u) => u.id === +userId);
-
-  if (index === -1) {
-    return res.status(404).json(`User with id ${userId} not found`);
-  }
-
-  users.splice(index, 1);
-
-  await fileServices.writer(users);
-
-  res.sendStatus(204);
+    users.splice(index, 1);
+    await fileService.writer(users)
+    res.sendStatus(204);
 });
 
-app.get('/', (req, res) => {
-  res.json('WELOCME')
-});
 
-// app.listen(5000, () => {
-//   console.log('Server listen 5000');
-//
-// // app.get('/', (req, res) => {
-// //     res.json('WELOCME')
-// // })
+// app.get('/', (req, res) => {
+//     res.json('WELOCME')
+// })
 
 app.listen(3000, async () => {
     await mongoose.connect('mongodb://localhost:27017/hbklks');
