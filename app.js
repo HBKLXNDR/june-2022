@@ -1,5 +1,9 @@
 const express = require('express');
 const { fileServices } = require('./services');
+const mongoose = require("mongoose")
+
+const {fileService} = require('./services');
+
 
 const app = express();
 
@@ -91,6 +95,15 @@ app.get('/', (req, res) => {
   res.json('WELOCME')
 });
 
-app.listen(5000, () => {
-  console.log('Server listen 5000');
+// app.listen(5000, () => {
+//   console.log('Server listen 5000');
+//
+// // app.get('/', (req, res) => {
+// //     res.json('WELOCME')
+// // })
+
+app.listen(3000, async () => {
+    await mongoose.connect('mongodb://localhost:27017/hbklks');
+
+    console.log('Server listen 3000');
 });
